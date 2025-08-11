@@ -200,6 +200,156 @@ MainTab:CreateToggle({
 
 
 local MiscTab = Window:CreateTab("Misc", nil)
+
+-------------------------------------------------
+-- ESP Section
+-------------------------------------------------
+local ESPSection = MiscTab:CreateSection("ESP")
+
+local crateESPEnabled = false
+local eggESPEnabled = false
+local espFolder = Instance.new("Folder", workspace)
+espFolder.Name = "ESP_Objects"
+
+local RunService = game:GetService("RunService")
+local camera = workspace.CurrentCamera
+
+local highlightParts = {}
+local espLines = {}
+
+local function clearESP()
+    -- Remove Highlight instances
+    for _, v in ipairs(espFolder:GetChildren()) do
+        v:Destroy()
+    end
+    highlightParts = {}
+
+    -- Remove Drawing lines
+    for _, line in pairs(espLines) do
+        line:Remove()
+    end
+    espLines = {}
+end
+
+local function createESP(object, color)
+    local highlight = Instance.new("Highlight")
+    highlight.Parent = espFolder
+    highlight.Adornee = object
+    highlight.FillColor = color
+    highlight.OutlineColor = Color3.new(1, 1, 1)
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+
+    table.insert(highlightParts, {object = object, color = color})
+end
+
+local function findHighlightPart(crate)
+    if crate:IsA("BasePart") then
+        return crate
+    end
+    for _, descendant in ipairs(crate:GetDescendants()) do
+        if descendant:IsA("BasePart") then
+            return descendant
+        end
+    end
+    return nil
+end
+
+local function updateESP()
+    clearESP()
+
+    if crateESPEnabled then
+        local boxesFolder = workspace:FindFirstChild("Boxes")
+        if boxesFolder then
+            for _, crate in ipairs(boxesFolder:GetChildren()) do
+                if crate:FindFirstChildOfClass("Decal") or crate:FindFirstChildWhichIsA("Decal") then
+                    local partToHighlight = findHighlightPart(crate)
+                    if partToHighlight then
+                        createESP(partToHighlight, Color3.fromRGB(255, 215, 0)) -- Gold
+                    end
+                end
+            end
+        end
+    end
+
+    if eggESPEnabled then
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if (obj:IsA("Model") or obj:IsA("BasePart")) and string.find(obj.Name:lower(), "egg") then
+                createESP(obj, Color3.fromRGB(255, 0, 255)) -- Pink
+            end
+        end
+    end
+end
+
+-- Update Drawing lines every frame
+RunService.RenderStepped:Connect(function()
+    -- Clear previous lines
+    for _, line in pairs(espLines) do
+        line.Visible = false
+        line:Remove()
+    end
+    espLines = {}
+
+    local screenPos = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+
+    for _, entry in ipairs(highlightParts) do
+        local obj = entry.object
+        local color = entry.color
+
+        if obj and obj.Parent then
+            local objPos = obj.Position
+            local onScreen, screenPoint = pcall(function()
+                return camera:WorldToViewportPoint(objPos)
+            end)
+
+            if onScreen then
+                local inView = screenPoint.Z > 0
+                if inView then
+                    local line = Drawing.new("Line")
+                    line.From = screenPos
+                    line.To = Vector2.new(screenPoint.X, screenPoint.Y)
+                    line.Color = color
+                    line.Thickness = 2
+                    line.Transparency = 1
+                    line.Visible = true
+                    table.insert(espLines, line)
+                end
+            end
+        end
+    end
+end)
+
+-- GUI toggles to control ESP
+MiscTab:CreateToggle({
+    Name = "Crate ESP",
+    CurrentValue = false,
+    Callback = function(state)
+        crateESPEnabled = state
+        updateESP()
+    end,
+})
+
+MiscTab:CreateToggle({
+    Name = "Egg ESP",
+    CurrentValue = false,
+    Callback = function(state)
+        eggESPEnabled = state
+        updateESP()
+    end,
+})
+
+-- Periodic update to ESP highlights (every 3 seconds)
+task.spawn(function()
+    while true do
+        if crateESPEnabled or eggESPEnabled then
+            updateESP()
+        end
+        task.wait(3)
+    end
+end)
+-------------------------------------------------
+-- ESP Section END
+-------------------------------------------------
+
 local MiscSection = MiscTab:CreateSection("Egg Events")
 
 local autoEasterEggs = false
@@ -436,24 +586,3 @@ if autoEasterHop and hopToggle then
     hopToggle:Set(true)
     task.spawn(startEggHop)
 end
-
-MiscTab:CreateButton({
-    Name = "Teleport to My Base",
-    Callback = function()
-        local Players = game:GetService("Players")
-        local Workspace = game:GetService("Workspace")
-        local player = Players.LocalPlayer
-        local plrTycoon = player:FindFirstChild("ActiveTycoon") and player.ActiveTycoon.Value
-        local tycoons = Workspace:FindFirstChild("Tycoons")
-
-        if plrTycoon and tycoons then
-            local baseModel = tycoons:FindFirstChild(plrTycoon.Name)
-            if baseModel then
-                local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    hrp.CFrame = baseModel:GetModelCFrame() + Vector3.new(0, 10, 0)
-                end
-            end
-        end
-    end
-})
