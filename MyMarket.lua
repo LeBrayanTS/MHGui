@@ -5,7 +5,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:CreateWindow({
     Name = "My Market Tool",
     LoadingTitle = "My Market Tool",
-    LoadingSubtitle = "by BrayanTS",
+    LoadingSubtitle = "by YourNameHere",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "MyMarketTool",
@@ -23,23 +23,35 @@ local Window = Rayfield:CreateWindow({
 local MainTab = Window:CreateTab("Main", 4483362458)
 local AutoCollectSection = MainTab:CreateSection("Auto Collect")
 
+-- Create a label to show base name inside the Rayfield GUI
+local baseNameLabel = AutoCollectSection:CreateLabel("Base: Searching...")
+
 -- Function to find player's base
 local function FindPlayerBase()
     local playerName = game.Players.LocalPlayer.Name
     for _, plot in pairs(workspace.Plots:GetChildren()) do
-        if plot:FindFirstChild("Owner") and plot.Owner.Value == playerName then
-            return plot
+        if plot:FindFirstChild("Owner") then
+            local ownerVal = plot.Owner.Value
+            if typeof(ownerVal) == "string" and ownerVal == playerName then
+                baseNameLabel:Set("Base: " .. plot.Name)
+                return plot
+            elseif typeof(ownerVal) == "Instance" and ownerVal:IsA("Player") and ownerVal.Name == playerName then
+                baseNameLabel:Set("Base: " .. plot.Name)
+                return plot
+            end
         end
     end
+    baseNameLabel:Set("Base: Not Found")
     return nil
 end
 
 -- Teleport function
 local function TeleportToPart(part)
-    if not part or not part:IsA("BasePart") then return end
-    local char = game.Players.LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        char.HumanoidRootPart.CFrame = part.CFrame + Vector3.new(0, 3, 0)
+    local player = game.Players.LocalPlayer
+    if not part or not part:IsA("BasePart") or not player.Character then return end
+    local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        hrp.CFrame = CFrame.new(part.Position + Vector3.new(0, 3, 0))
     end
 end
 
@@ -61,22 +73,20 @@ local function StartAutoCollect()
 
                 local collectors = myBase:FindFirstChild("Collectors")
                 if collectors then
-                    for _, collector in pairs(collectors:GetChildren()) do
-                        if collector:IsA("BasePart") then
-                            TeleportToPart(collector)
-                            task.wait(0.1) -- Give time for touch to register
-                        elseif collector:IsA("Model") then
-                            local touchPart = collector:FindFirstChildWhichIsA("BasePart")
-                            if touchPart then
-                                TeleportToPart(touchPart)
-                                task.wait(0.1)
-                            end
+                    -- Use GetDescendants to catch all parts inside collectors
+                    for _, obj in ipairs(collectors:GetDescendants()) do
+                        if obj:IsA("BasePart") then
+                            TeleportToPart(obj)
+                            task.wait(0.2) -- Slightly longer wait for touch to register
                         end
                     end
                 end
 
-                -- Return to original position
-                char.HumanoidRootPart.CFrame = oldPos
+                -- Return to original position if still alive
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.CFrame = oldPos
+                end
             end
             task.wait(1)
         end
