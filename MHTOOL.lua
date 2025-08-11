@@ -152,6 +152,7 @@ local function beamsize()
 end
 
 -- Boosting loop
+
 task.spawn(function()
 	while true do
 		if boosting and baseModel and selectedCell ~= "" then
@@ -160,12 +161,22 @@ task.spawn(function()
 				local model = cell:FindFirstChild("Model")
 				if model then
 					local lava = model:FindFirstChild("Lava")
-					if lava then
+					local lava1 = model:FindFirstChild("Lava1")
+
+					if lava or lava1 then
 						beamsize()
 						task.wait(1)
-						for _, part in ipairs(droppedParts:FindFirstChild(baseModel.Name):GetChildren()) do
+
+						local ores = droppedParts:FindFirstChild(baseModel.Name):GetChildren()
+						local half = math.ceil(#ores / 2)
+
+						for i, part in ipairs(ores) do
 							if part:IsA("BasePart") then
-								part.CFrame = lava.CFrame * CFrame.new(0, 10, 0)
+								if lava and (not lava1 or i <= half) then
+									part.CFrame = lava.CFrame * CFrame.new(0, 10, 0)
+								elseif lava1 then
+									part.CFrame = lava1.CFrame * CFrame.new(0, 10, 0)
+								end
 							end
 						end
 					end
