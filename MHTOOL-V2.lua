@@ -133,22 +133,25 @@ local baseModel = getBase()
 -- === Ore Booster Section Optimizada ===
 MainTab:CreateSection("Ore Booster")
 
--- Label mostrando la base
-MainTab:CreateLabel("Base: " .. (baseModel and baseModel.Name or "Not Found"))
+-- Detect base
+local baseModel = getBase()
 
--- Dropdown para seleccionar la cell donde se procesarán los ores
-local cellOptions = {}
-for _, c in ipairs(baseModel:GetChildren()) do
-    if c:IsA("Model") then
-        table.insert(cellOptions, c.Name)
+-- Dropdown solo con cells que tienen Lava o Lava1
+local furnaceCells = {}
+for _, cell in ipairs(baseModel:GetChildren()) do
+    if cell:IsA("Model") then
+        local model = cell:FindFirstChild("Model")
+        if model and (model:FindFirstChild("Lava") or model:FindFirstChild("Lava1")) then
+            table.insert(furnaceCells, cell.Name)
+        end
     end
 end
 
-local selectedCell = cellOptions[1] or ""
+local selectedCell = furnaceCells[1] or ""
 
 MainTab:CreateDropdown({
     Name = "Select Furnace Cell",
-    Options = cellOptions,
+    Options = furnaceCells,
     CurrentOption = selectedCell,
     Callback = function(option)
         selectedCell = option
@@ -165,21 +168,22 @@ MainTab:CreateToggle({
     end,
 })
 
--- Configuración de alturas para evitar colisiones
-local boosterHeight = 20
-local resetterHeight = 40
-local finalHeight = 10
+-- Configuración de alturas para no tocar hitboxes
+local boosterHeight = 15      -- Parte donde se pone el booster
+local resetterHeight = 30     -- Altura de resetters
+local finalHeight = 5         -- Altura final sobre Lava
 
 -- Orden de los resetters
 local resettersOrder = {"Black Dwarf", "The Final Upgrader", "Tesla Refuter"}
 
+-- Función para obtener resetters del baseModel
 local function getResetters()
     local resetters = {}
     for _, cell in ipairs(baseModel:GetChildren()) do
         if cell:IsA("Model") then
-            local cellModel = cell:FindFirstChild("Model")
-            if cellModel then
-                for _, item in ipairs(cellModel:GetChildren()) do
+            local model = cell:FindFirstChild("Model")
+            if model then
+                for _, item in ipairs(model:GetChildren()) do
                     if item:IsA("BasePart") and table.find(resettersOrder, item.Name) then
                         table.insert(resetters, item)
                     end
@@ -187,7 +191,8 @@ local function getResetters()
             end
         end
     end
-    table.sort(resetters, function(a, b)
+    -- Ordenar según resettersOrder
+    table.sort(resetters, function(a,b)
         return table.find(resettersOrder, a.Name) < table.find(resettersOrder, b.Name)
     end)
     return resetters
@@ -210,16 +215,17 @@ task.spawn(function()
                             
                             for _, ore in ipairs(ores) do
                                 if ore:IsA("BasePart") then
+                                    -- Primero al booster
                                     ore.CFrame = lava.CFrame * CFrame.new(0, boosterHeight, 0)
                                     task.wait(0.1)
-                                    
+                                    -- Pasar por cada resetter
                                     for _, resetter in ipairs(resetters) do
                                         ore.CFrame = resetter.CFrame * CFrame.new(0, resetterHeight, 0)
                                         task.wait(0.2)
                                         ore.CFrame = lava.CFrame * CFrame.new(0, boosterHeight, 0)
                                         task.wait(0.1)
                                     end
-                                    
+                                    -- Finalmente sobre lava
                                     ore.CFrame = lava.CFrame * CFrame.new(0, finalHeight, 0)
                                 end
                             end
