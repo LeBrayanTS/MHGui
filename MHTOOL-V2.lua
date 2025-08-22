@@ -40,7 +40,9 @@ MainTab:CreateToggle({
         autoOpen = value
         task.spawn(function()
             while autoOpen do
-                local args = {[1] = crateName}
+                local args = {
+                    [1] = crateName
+                }
                 pcall(function()
                     game:GetService("ReplicatedStorage"):WaitForChild("MysteryBox"):InvokeServer(unpack(args))
                 end)
@@ -52,36 +54,46 @@ MainTab:CreateToggle({
 
 -- Auto Layout Section
 local LayoutSection = MainTab:CreateSection("Auto Layout")
-local layoutToggles = {Layout1=false, Layout2=false, Layout3=false}
+
+local layoutToggles = {
+    Layout1 = false,
+    Layout2 = false,
+    Layout3 = false,
+}
 
 local function loopLayout(layoutName)
     task.spawn(function()
         while layoutToggles[layoutName] do
-            local args = {[1]="Load",[2]=layoutName}
+            local args = {
+                [1] = "Load",
+                [2] = layoutName
+            }
             pcall(function()
                 game:GetService("ReplicatedStorage"):WaitForChild("Layouts"):InvokeServer(unpack(args))
             end)
-            task.wait(2)
+            task.wait(2) -- delay between layout loads
         end
     end)
 end
 
-for i = 1,3 do
-    local layoutName = "Layout"..i
+for i = 1, 3 do
+    local layoutName = "Layout" .. i
     MainTab:CreateToggle({
-        Name = "Load "..layoutName,
+        Name = "Load " .. layoutName,
         CurrentValue = false,
         Callback = function(state)
             layoutToggles[layoutName] = state
-            if state then loopLayout(layoutName) end
+            if state then
+                loopLayout(layoutName)
+            end
         end,
     })
 end
 
 -- Auto Rebirth Section
 local RebirthSection = MainTab:CreateSection("Auto Rebirth")
-local autoRebirth = false
 
+local autoRebirth = false
 MainTab:CreateToggle({
     Name = "Auto Rebirth",
     CurrentValue = false,
@@ -89,95 +101,78 @@ MainTab:CreateToggle({
         autoRebirth = state
         task.spawn(function()
             while autoRebirth do
-                local args = {[1]=26}
+                local args = {[1] = 26}
                 pcall(function()
                     game:GetService("ReplicatedStorage"):WaitForChild("Rebirth"):InvokeServer(unpack(args))
                 end)
-                task.wait(.5)
+                task.wait(0.5)
             end
         end)
     end,
 })
 
--- Services
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
+
 local localPlayer = Players.LocalPlayer
 local tycoonsFolder = Workspace.Tycoons
 local droppedParts = Workspace.DroppedParts
 
 -- Auto-detect base
 local function getBase()
-    local activeTycoon = localPlayer:WaitForChild("ActiveTycoon").Value
-    for _, tycoonModel in ipairs(tycoonsFolder:GetChildren()) do
-        if tycoonModel == activeTycoon then
-            return tycoonModel
-        end
+	local activeTycoon = localPlayer:WaitForChild("ActiveTycoon").Value
+	for _, tycoonModel in ipairs(tycoonsFolder:GetChildren()) do
+		if tycoonModel == activeTycoon then
+			return tycoonModel
+		end
+	end
+end
+
+local baseModel = getBase()
+
+-- === Ore Booster Section Optimizada ===
+MainTab:CreateSection("Ore Booster")
+
+-- Label mostrando la base
+MainTab:CreateLabel("Base: " .. (baseModel and baseModel.Name or "Not Found"))
+
+-- Dropdown para seleccionar la cell donde se procesarán los ores
+local cellOptions = {}
+for _, c in ipairs(baseModel:GetChildren()) do
+    if c:IsA("Model") then
+        table.insert(cellOptions, c.Name)
     end
 end
 
--- Detectar automáticamente todas las cells con Lava o Lava1
-local function getLavaCells()
-    local lavaCells = {}
-    if not baseModel then return lavaCells end
-    for _, cell in ipairs(baseModel:GetChildren()) do
-        if cell:IsA("Model") then
-            local cellModel = cell:FindFirstChild("Model")
-            if cellModel then
-                for _, part in ipairs(cellModel:GetChildren()) do
-                    if part:IsA("BasePart") and (part.Name:lower():find("lava")) then
-                        table.insert(lavaCells, cell.Name) -- usamos el nombre del Cell, no del part
-                        break -- solo necesitamos agregar el cell una vez aunque tenga lava1 y lava
-                    end
-                end
-            end
-        end
-    end
-    return lavaCells
-end
+local selectedCell = cellOptions[1] or ""
 
--- Crear dropdown en lugar de Input
-local lavaCellsList = getLavaCells()
 MainTab:CreateDropdown({
-    Name = "Cell Name",
-    Options = lavaCellsList,
-    CurrentOption = lavaCellsList[1] or "",
+    Name = "Select Furnace Cell",
+    Options = cellOptions,
+    CurrentOption = selectedCell,
     Callback = function(option)
-        selectedCell = option -- mantenemos la variable original
+        selectedCell = option
     end,
 })
 
--- Actualización periódica por si agregan nuevos furnaces
-task.spawn(function()
-    while true do
-        local newList = getLavaCells()
-        if #newList ~= #lavaCellsList then
-            lavaCellsList = newList
-            -- Aquí podríamos actualizar el dropdown dinámicamente si Rayfield lo soporta
-        end
-        task.wait(10)
-    end
-end)
-
-
-local baseModel = getBase()
-local selectedCell = ""
+-- Toggle de activación
 local boosting = false
+MainTab:CreateToggle({
+    Name = "Enable Ore Boosting",
+    CurrentValue = false,
+    Callback = function(value)
+        boosting = value
+    end,
+})
 
--- === Ore Booster Updated Section ===
-MainTab:CreateSection("Ore Booster")
-MainTab:CreateLabel("Base: " .. (baseModel and baseModel.Name or "Not Found"))
+-- Configuración de alturas para evitar colisiones
+local boosterHeight = 20
+local resetterHeight = 40
+local finalHeight = 10
 
--- Variables principales
-local boosting = false
-local resettersOrder = {"Black Dwarf", "The Final Upgrader", "Tesla Refuter"} -- añadir "Daestrofe" luego
+-- Orden de los resetters
+local resettersOrder = {"Black Dwarf", "The Final Upgrader", "Tesla Refuter"}
 
--- Alturas para posicionar los ores
-local boosterHeight = 20 -- altura sobre la base del cell para el booster
-local resetterHeight = 40 -- altura para los resetters, evitando colisiones
-local finalHeight = 10 -- altura final sobre la cell
-
--- Función para obtener resetters en la base, en orden definido
 local function getResetters()
     local resetters = {}
     for _, cell in ipairs(baseModel:GetChildren()) do
@@ -192,14 +187,13 @@ local function getResetters()
             end
         end
     end
-    -- Ordenar según resettersOrder
     table.sort(resetters, function(a, b)
         return table.find(resettersOrder, a.Name) < table.find(resettersOrder, b.Name)
     end)
     return resetters
 end
 
--- Boosting loop
+-- Loop principal de boosting
 task.spawn(function()
     while true do
         if boosting and baseModel and selectedCell ~= "" then
@@ -216,20 +210,16 @@ task.spawn(function()
                             
                             for _, ore in ipairs(ores) do
                                 if ore:IsA("BasePart") then
-                                    -- Mover al booster
                                     ore.CFrame = lava.CFrame * CFrame.new(0, boosterHeight, 0)
                                     task.wait(0.1)
                                     
-                                    -- Pasar por cada resetter en orden
                                     for _, resetter in ipairs(resetters) do
                                         ore.CFrame = resetter.CFrame * CFrame.new(0, resetterHeight, 0)
-                                        task.wait(0.2) -- tiempo de “procesado”
-                                        -- Volver al booster
+                                        task.wait(0.2)
                                         ore.CFrame = lava.CFrame * CFrame.new(0, boosterHeight, 0)
                                         task.wait(0.1)
                                     end
                                     
-                                    -- Finalmente mover a la cell seleccionada
                                     ore.CFrame = lava.CFrame * CFrame.new(0, finalHeight, 0)
                                 end
                             end
@@ -241,17 +231,6 @@ task.spawn(function()
         task.wait(1)
     end
 end)
-
--- Toggle de interfaz
-MainTab:CreateToggle({
-    Name = "Enable Ore Boosting",
-    CurrentValue = false,
-    Callback = function(value)
-        boosting = value
-    end,
-})
-
-
 
 -- === Misc Tab ===
 local MiscTab = Window:CreateTab("Misc", nil)
