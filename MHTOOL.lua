@@ -607,27 +607,5 @@ ConveyorSection:CreateSlider({
     Range = {2, 100},
     Increment = 1,
     Suffix = "x",
-    CurrentValue = conveyorMultiplier,
-    Callback = function(value)
-        conveyorMultiplier = value
-
-        if baseModel then
-            for _, cell in ipairs(baseModel:GetChildren()) do
-                if cell:IsA("Model") then
-                    local model = cell:FindFirstChild("Model")
-                    if model then
-                        for _, convModel in ipairs(model:GetChildren()) do
-                            if convModel:IsA("Model") and convModel:FindFirstChild("Conv") then
-                                local conv = convModel.Conv
-                                if conv:IsA("BasePart") and conv:FindFirstChild("Assembly") then
-                                    local assembly = conv.Assembly
-                                    assembly.AssemblyLinearVelocity = Vector3.new(conveyorMultiplier, assembly.AssemblyLinearVelocity.Y, assembly.AssemblyLinearVelocity.Z)
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end,
+    CurrentValue = 1
 })
