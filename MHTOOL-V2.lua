@@ -139,10 +139,13 @@ MainTab:CreateToggle({
     end,
 })
 
--- Resetters in order
+-- === Optimized Ore Booster ===
+local selectedCell = ""
+local boosting = false
+local processedOres = {} -- tabla para ores ya procesados
 local resetterOrder = {"Black Dwarf","The Final Upgrader","Tesla Refuter","Daestrophe"}
 
--- Detect Boosters and Resetters
+-- Detect Boosters y Resetters en la celda
 local function getUpgraders(cellModel)
     local boosters = {}
     local resetters = {}
@@ -169,10 +172,12 @@ local function getUpgraders(cellModel)
     return boosters, resetters
 end
 
-local function moveOresTo(targetCFrame, ores)
+-- Función para mover solo ores nuevos a una posición
+local function moveNewOres(targetCFrame, ores)
     for _, part in ipairs(ores) do
-        if part:IsA("BasePart") then
+        if part:IsA("BasePart") and not processedOres[part] then
             part.CFrame = targetCFrame + Vector3.new(0,5,0)
+            processedOres[part] = true
         end
     end
 end
@@ -191,38 +196,39 @@ task.spawn(function()
                         local ores = oresFolder:GetChildren()
                         local boosters, resetters = getUpgraders(cellModel)
 
-                        -- Boosters first
+                        -- Boosters primero
                         for _, booster in ipairs(boosters) do
                             local boosterPart = booster:FindFirstChild("Model") and booster.Model:FindFirstChild("Upgrade")
                             if boosterPart then
-                                moveOresTo(boosterPart.CFrame, ores)
-                                task.wait(0.5)
+                                moveNewOres(boosterPart.CFrame, ores)
+                                task.wait(0.3)
                             end
                         end
 
-                        -- Resetters in order
+                        -- Resetters en orden
                         for _, resetName in ipairs(resetterOrder) do
                             for _, resetter in ipairs(resetters) do
                                 if resetter.Name == resetName then
                                     local resetPart = resetter:FindFirstChild("Model") and resetter.Model:FindFirstChild("Upgrade")
                                     if resetPart then
-                                        moveOresTo(resetPart.CFrame, ores)
-                                        task.wait(0.5)
+                                        moveNewOres(resetPart.CFrame, ores)
+                                        task.wait(0.3)
                                     end
                                 end
                             end
                         end
 
-                        -- Final sobre lava
-                        if lava then moveOresTo(lava.CFrame, ores) end
-                        if lava1 then moveOresTo(lava1.CFrame, ores) end
+                        -- Finalmente sobre lava
+                        if lava then moveNewOres(lava.CFrame, ores) end
+                        if lava1 then moveNewOres(lava1.CFrame, ores) end
                     end
                 end
             end
         end
-        task.wait(2)
+        task.wait(1) -- espera más corta para reagrupar ores nuevos
     end
 end)
+
 
 -- === Misc Tab ===
 local MiscTab = Window:CreateTab("Misc", nil)
