@@ -116,6 +116,50 @@ local function getBase()
     end
 end
 
+-- Detectar automáticamente todas las cells con Lava o Lava1
+local function getLavaCells()
+    local lavaCells = {}
+    if not baseModel then return lavaCells end
+    for _, cell in ipairs(baseModel:GetChildren()) do
+        if cell:IsA("Model") then
+            local cellModel = cell:FindFirstChild("Model")
+            if cellModel then
+                for _, part in ipairs(cellModel:GetChildren()) do
+                    if part:IsA("BasePart") and (part.Name:lower():find("lava")) then
+                        table.insert(lavaCells, cell.Name) -- usamos el nombre del Cell, no del part
+                        break -- solo necesitamos agregar el cell una vez aunque tenga lava1 y lava
+                    end
+                end
+            end
+        end
+    end
+    return lavaCells
+end
+
+-- Crear dropdown en lugar de Input
+local lavaCellsList = getLavaCells()
+MainTab:CreateDropdown({
+    Name = "Cell Name",
+    Options = lavaCellsList,
+    CurrentOption = lavaCellsList[1] or "",
+    Callback = function(option)
+        selectedCell = option -- mantenemos la variable original
+    end,
+})
+
+-- Actualización periódica por si agregan nuevos furnaces
+task.spawn(function()
+    while true do
+        local newList = getLavaCells()
+        if #newList ~= #lavaCellsList then
+            lavaCellsList = newList
+            -- Aquí podríamos actualizar el dropdown dinámicamente si Rayfield lo soporta
+        end
+        task.wait(10)
+    end
+end)
+
+
 local baseModel = getBase()
 local selectedCell = ""
 local boosting = false
