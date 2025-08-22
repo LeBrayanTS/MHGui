@@ -597,3 +597,40 @@ if autoEasterHop and hopToggle then
     hopToggle:Set(true)
     task.spawn(startEggHop)
 end
+
+
+-- === Conveyor Speed Section (Misc Tab) ===
+local ConveyorSection = MiscTab:CreateSection("Conveyor Speed")
+
+local conveyorMultiplier = 2
+
+ConveyorSection:CreateSlider({
+    Name = "Conveyor Speed Multiplier",
+    Range = {2, 100}, -- Multiplicador de 2x a 100x
+    Increment = 1,
+    Suffix = "x",
+    CurrentValue = conveyorMultiplier,
+    Callback = function(value)
+        conveyorMultiplier = value
+
+        if baseModel then
+            for _, cell in ipairs(baseModel:GetChildren()) do
+                if cell:IsA("Model") then
+                    local model = cell:FindFirstChild("Model")
+                    if model then
+                        for _, convModel in ipairs(model:GetChildren()) do
+                            if convModel:IsA("Model") and convModel:FindFirstChild("Conv") then
+                                local conv = convModel.Conv
+                                if conv:IsA("BasePart") and conv:FindFirstChild("Assembly") then
+                                    local assembly = conv.Assembly
+                                    local currentVel = assembly.AssemblyLinearVelocity
+                                    assembly.AssemblyLinearVelocity = Vector3.new(currentVel.X * conveyorMultiplier, currentVel.Y, currentVel.Z)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end,
+})
