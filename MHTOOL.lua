@@ -598,10 +598,8 @@ if autoEasterHop and hopToggle then
     task.spawn(startEggHop)
 end
 
--- Conveyor Speed Section
-local ConveyorSection = MiscTab:CreateSection("Conveyor Speed")
-
-ConveyorSection:CreateSlider({
+MiscTab:CreateSection("Conveyor Speed")
+MiscTab:CreateSlider({
     Name = "Conveyor X Speed",
     Range = {2, 100},
     Increment = 1,
