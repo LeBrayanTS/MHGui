@@ -598,19 +598,17 @@ if autoEasterHop and hopToggle then
     task.spawn(startEggHop)
 end
 
--- === Conveyor Speed Section (Misc Tab) ===
+-- Conveyor Speed en Misc Tab
 local ConveyorSection = MiscTab:CreateSection("Conveyor Speed")
 
--- Valor inicial dentro del rango
 local conveyorMultiplier = 2
 
-ConveyorSection:CreateSlider({
+MiscTab:CreateSlider({
     Name = "Conveyor Speed Multiplier",
-    Range = {2, 100}, -- Multiplicador de 2x a 100x
+    Range = {2, 100},
     Increment = 1,
     Suffix = "x",
     CurrentValue = conveyorMultiplier,
-    Flag = "ConveyorSpeedSlider",
     Callback = function(value)
         conveyorMultiplier = value
 
@@ -624,7 +622,6 @@ ConveyorSection:CreateSlider({
                                 local conv = convModel.Conv
                                 if conv:IsA("BasePart") and conv:FindFirstChild("Assembly") then
                                     local assembly = conv.Assembly
-                                    -- Solo X cambia
                                     assembly.AssemblyLinearVelocity = Vector3.new(conveyorMultiplier, assembly.AssemblyLinearVelocity.Y, assembly.AssemblyLinearVelocity.Z)
                                 end
                             end
