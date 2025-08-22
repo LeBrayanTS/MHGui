@@ -598,12 +598,11 @@ if autoEasterHop and hopToggle then
     task.spawn(startEggHop)
 end
 
--- Conveyor Speed en Misc Tab
 local ConveyorSection = MiscTab:CreateSection("Conveyor Speed")
 
 local conveyorMultiplier = 2
 
-MiscTab:CreateSlider({
+ConveyorSection:CreateSlider({
     Name = "Conveyor Speed Multiplier",
     Range = {2, 100},
     Increment = 1,
