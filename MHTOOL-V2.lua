@@ -124,48 +124,81 @@ local boosting = false
 MainTab:CreateSection("Ore Booster")
 MainTab:CreateLabel("Base: " .. (baseModel and baseModel.Name or "Not Found"))
 
-local function getLavaCells()
-    local lavaCells = {}
-    if not baseModel then return lavaCells end
+-- Variables principales
+local boosting = false
+local resettersOrder = {"Black Dwarf", "The Final Upgrader", "Tesla Refuter"} -- añadir "Daestrofe" luego
+
+-- Alturas para posicionar los ores
+local boosterHeight = 20 -- altura sobre la base del cell para el booster
+local resetterHeight = 40 -- altura para los resetters, evitando colisiones
+local finalHeight = 10 -- altura final sobre la cell
+
+-- Función para obtener resetters en la base, en orden definido
+local function getResetters()
+    local resetters = {}
     for _, cell in ipairs(baseModel:GetChildren()) do
         if cell:IsA("Model") then
             local cellModel = cell:FindFirstChild("Model")
             if cellModel then
-                for _, part in ipairs(cellModel:GetChildren()) do
-                    if part:IsA("BasePart") and (part.Name:lower():find("lava")) then
-                        table.insert(lavaCells, cell.Name) -- usamos el nombre del Cell, no del part
-                        break -- solo necesitamos agregar el cell una vez aunque tenga lava1 y lava
+                for _, item in ipairs(cellModel:GetChildren()) do
+                    if item:IsA("BasePart") and table.find(resettersOrder, item.Name) then
+                        table.insert(resetters, item)
                     end
                 end
             end
         end
     end
-    return lavaCells
+    -- Ordenar según resettersOrder
+    table.sort(resetters, function(a, b)
+        return table.find(resettersOrder, a.Name) < table.find(resettersOrder, b.Name)
+    end)
+    return resetters
 end
 
--- Crear dropdown en lugar de Input
-local lavaCellsList = getLavaCells()
-MainTab:CreateDropdown({
-    Name = "Cell Name",
-    Options = lavaCellsList,
-    CurrentOption = lavaCellsList[1] or "",
-    Callback = function(option)
-        selectedCell = option -- mantenemos la variable original
-    end,
-})
-
--- Actualización periódica por si agregan nuevos furnaces
+-- Boosting loop
 task.spawn(function()
     while true do
-        local newList = getLavaCells()
-        if #newList ~= #lavaCellsList then
-            lavaCellsList = newList
-            -- Aquí podríamos actualizar el dropdown dinámicamente si Rayfield lo soporta
+        if boosting and baseModel and selectedCell ~= "" then
+            local cell = baseModel:FindFirstChild(selectedCell)
+            if cell then
+                local model = cell:FindFirstChild("Model")
+                if model then
+                    local lava = model:FindFirstChild("Lava") or model:FindFirstChild("Lava1")
+                    if lava then
+                        local oresFolder = droppedParts:FindFirstChild(baseModel.Name)
+                        if oresFolder then
+                            local ores = oresFolder:GetChildren()
+                            local resetters = getResetters()
+                            
+                            for _, ore in ipairs(ores) do
+                                if ore:IsA("BasePart") then
+                                    -- Mover al booster
+                                    ore.CFrame = lava.CFrame * CFrame.new(0, boosterHeight, 0)
+                                    task.wait(0.1)
+                                    
+                                    -- Pasar por cada resetter en orden
+                                    for _, resetter in ipairs(resetters) do
+                                        ore.CFrame = resetter.CFrame * CFrame.new(0, resetterHeight, 0)
+                                        task.wait(0.2) -- tiempo de “procesado”
+                                        -- Volver al booster
+                                        ore.CFrame = lava.CFrame * CFrame.new(0, boosterHeight, 0)
+                                        task.wait(0.1)
+                                    end
+                                    
+                                    -- Finalmente mover a la cell seleccionada
+                                    ore.CFrame = lava.CFrame * CFrame.new(0, finalHeight, 0)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
         end
-        task.wait(10)
+        task.wait(1)
     end
 end)
 
+-- Toggle de interfaz
 MainTab:CreateToggle({
     Name = "Enable Ore Boosting",
     CurrentValue = false,
@@ -174,95 +207,6 @@ MainTab:CreateToggle({
     end,
 })
 
--- === Optimized Ore Booster ===
-local selectedCell = ""
-local boosting = false
-local processedOres = {} -- tabla para ores ya procesados
-local resetterOrder = {"Black Dwarf","The Final Upgrader","Tesla Refuter","Daestrophe"}
-
--- Detect Boosters y Resetters en la celda
-local function getUpgraders(cellModel)
-    local boosters = {}
-    local resetters = {}
-    for _, item in ipairs(cellModel:GetChildren()) do
-        if item:IsA("Model") then
-            local itemType = item:FindFirstChild("ItemType")
-            local itemName = item.Name
-            if itemType and itemType.Value == 6 then
-                local isResetter = false
-                for _, resetName in ipairs(resetterOrder) do
-                    if itemName == resetName then
-                        isResetter = true
-                        break
-                    end
-                end
-                if isResetter then
-                    table.insert(resetters, item)
-                else
-                    table.insert(boosters, item)
-                end
-            end
-        end
-    end
-    return boosters, resetters
-end
-
--- Función para mover solo ores nuevos a una posición
-local function moveNewOres(targetCFrame, ores)
-    for _, part in ipairs(ores) do
-        if part:IsA("BasePart") and not processedOres[part] then
-            part.CFrame = targetCFrame + Vector3.new(0,5,0)
-            processedOres[part] = true
-        end
-    end
-end
-
-task.spawn(function()
-    while true do
-        if boosting and baseModel and selectedCell ~= "" then
-            local cell = baseModel:FindFirstChild(selectedCell)
-            if cell then
-                local cellModel = cell:FindFirstChild("Model")
-                if cellModel then
-                    local lava = cellModel:FindFirstChild("Lava")
-                    local lava1 = cellModel:FindFirstChild("Lava1")
-                    local oresFolder = droppedParts:FindFirstChild(baseModel.Name)
-                    if oresFolder then
-                        local ores = oresFolder:GetChildren()
-                        local boosters, resetters = getUpgraders(cellModel)
-
-                        -- Boosters primero
-                        for _, booster in ipairs(boosters) do
-                            local boosterPart = booster:FindFirstChild("Model") and booster.Model:FindFirstChild("Upgrade")
-                            if boosterPart then
-                                moveNewOres(boosterPart.CFrame, ores)
-                                task.wait(0.3)
-                            end
-                        end
-
-                        -- Resetters en orden
-                        for _, resetName in ipairs(resetterOrder) do
-                            for _, resetter in ipairs(resetters) do
-                                if resetter.Name == resetName then
-                                    local resetPart = resetter:FindFirstChild("Model") and resetter.Model:FindFirstChild("Upgrade")
-                                    if resetPart then
-                                        moveNewOres(resetPart.CFrame, ores)
-                                        task.wait(0.3)
-                                    end
-                                end
-                            end
-                        end
-
-                        -- Finalmente sobre lava
-                        if lava then moveNewOres(lava.CFrame, ores) end
-                        if lava1 then moveNewOres(lava1.CFrame, ores) end
-                    end
-                end
-            end
-        end
-        task.wait(1) -- espera más corta para reagrupar ores nuevos
-    end
-end)
 
 
 -- === Misc Tab ===
