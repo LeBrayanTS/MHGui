@@ -598,9 +598,8 @@ if autoEasterHop and hopToggle then
     task.spawn(startEggHop)
 end
 
-MiscTab:CreateSection("Conveyor Speed")
 MiscTab:CreateSlider({
-    Name = "Conveyor X Speed",
+    Name = "Conveyor Speed",
     Range = {2, 100},
     Increment = 1,
     Suffix = "x",
