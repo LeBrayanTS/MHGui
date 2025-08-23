@@ -114,6 +114,8 @@ MainTab:CreateToggle({
     end,
 })
 
+-- BOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOSTEEEEEEEEEEEEEEEEEEEEEEEEEEEEER PAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAART
+
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 
@@ -121,7 +123,7 @@ local localPlayer = Players.LocalPlayer
 local tycoonsFolder = Workspace.Tycoons
 local droppedParts = Workspace.DroppedParts
 
--- Auto-detect base
+-- Detecta la base del jugador
 local function getBase()
 	local activeTycoon = localPlayer:WaitForChild("ActiveTycoon").Value
 	for _, tycoonModel in ipairs(tycoonsFolder:GetChildren()) do
@@ -135,55 +137,59 @@ local baseModel = getBase()
 local selectedCell = ""
 local boosting = false
 
--- Beam enlarging function
-local function beamsize()
-	for _, tycoon in ipairs(baseModel:GetChildren()) do
-		if tycoon:IsA("Model") then
-			local model = tycoon:FindFirstChild("Model")
+-- Mueve todas las hitboxes (Upgrade parts) a una sola zona flotante
+local function moveUpgradersToCell(cell)
+	local model = cell:FindFirstChild("Model")
+	if not model then return end
+
+	local lava = model:FindFirstChild("Lava") or model:FindFirstChild("Lava1")
+	if not lava then return end
+
+	local stackPos = lava.CFrame * CFrame.new(0, 30, 0) -- zona flotante
+
+	for _, item in ipairs(baseModel:GetChildren()) do
+		if item:IsA("Model") then
+			local model = item:FindFirstChild("Model")
 			if model then
 				local upgradePart = model:FindFirstChild("Upgrade")
 				if upgradePart then
-					upgradePart.Size = upgradePart.Size + Vector3.new(100, 100, 100)
+					-- Mover la hitbox arriba de la cell
+					upgradePart.CFrame = stackPos
+					upgradePart.Size = Vector3.new(10, 10, 10) -- tamaño reducido para que sí funcione sin lag
 					upgradePart.Transparency = 1
 				end
 			end
 		end
 	end
+
+	return lava
 end
 
--- Boosting loop
-
+-- Boosting Loop
 task.spawn(function()
 	while true do
 		if boosting and baseModel and selectedCell ~= "" then
 			local cell = baseModel:FindFirstChild(selectedCell)
 			if cell then
-				local model = cell:FindFirstChild("Model")
-				if model then
-					local lava = model:FindFirstChild("Lava")
-					local lava1 = model:FindFirstChild("Lava1")
+				local lava = moveUpgradersToCell(cell)
+				if lava then
+					local oresFolder = droppedParts:FindFirstChild(baseModel.Name)
+					if oresFolder then
+						for _, ore in ipairs(oresFolder:GetChildren()) do
+							if ore:IsA("BasePart") then
+								-- Primero a la zona de los boosters
+								ore.CFrame = lava.CFrame * CFrame.new(0, 30, 0)
+								task.wait(0.2)
 
-					if lava or lava1 then
-						beamsize()
-						task.wait(1)
-
-						local ores = droppedParts:FindFirstChild(baseModel.Name):GetChildren()
-						local half = math.ceil(#ores / 2)
-
-						for i, part in ipairs(ores) do
-							if part:IsA("BasePart") then
-								if lava and (not lava1 or i <= half) then
-									part.CFrame = lava.CFrame * CFrame.new(0, 10, 0)
-								elseif lava1 then
-									part.CFrame = lava1.CFrame * CFrame.new(0, 10, 0)
-								end
+								-- Después al lava para procesarse
+								ore.CFrame = lava.CFrame * CFrame.new(0, 5, 0)
 							end
 						end
 					end
 				end
 			end
 		end
-		task.wait(2)
+		task.wait(1)
 	end
 end)
 
