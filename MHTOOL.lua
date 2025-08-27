@@ -145,7 +145,7 @@ local function moveUpgradersToCell(cell)
 	local lava = model:FindFirstChild("Lava") or model:FindFirstChild("Lava1")
 	if not lava then return end
 
-	local stackPos = lava.CFrame * CFrame.new(0, 30, 0) -- zona flotante
+	local stackPos = lava.CFrame * CFrame.new(0, 20, 0) -- zona flotante
 
 	for _, item in ipairs(baseModel:GetChildren()) do
 		if item:IsA("Model") then
@@ -179,7 +179,7 @@ task.spawn(function()
 							if ore:IsA("BasePart") then
 								-- Primero a la zona de los boosters
 								ore.CFrame = lava.CFrame * CFrame.new(0, 20, 0)
-								task.wait(0.2)
+								task.wait(0.5)
 
 								-- Después al lava para procesarse
 								ore.CFrame = lava.CFrame * CFrame.new(0, 5, 0)
