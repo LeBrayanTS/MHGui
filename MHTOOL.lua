@@ -155,7 +155,7 @@ local function moveUpgradersToCell(cell)
 				if upgradePart then
 					-- Mover la hitbox arriba de la cell
 					upgradePart.CFrame = stackPos
-					upgradePart.Size = Vector3.new(25, 25, 25) -- tamaño reducido para que sí funcione sin lag
+					upgradePart.Size = Vector3.new(40, 40, 40) -- tamaño reducido para que sí funcione sin lag
 					upgradePart.Transparency = 1
 				end
 			end
