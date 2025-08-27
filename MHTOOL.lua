@@ -178,7 +178,7 @@ task.spawn(function()
 						for _, ore in ipairs(oresFolder:GetChildren()) do
 							if ore:IsA("BasePart") then
 								-- Primero a la zona de los boosters
-								ore.CFrame = lava.CFrame * CFrame.new(0, 30, 0)
+								ore.CFrame = lava.CFrame * CFrame.new(0, 20, 0)
 								task.wait(0.2)
 
 								-- Después al lava para procesarse
