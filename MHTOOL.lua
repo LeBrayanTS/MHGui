@@ -179,7 +179,7 @@ task.spawn(function()
 							if ore:IsA("BasePart") then
 								-- Primero a la zona de los boosters
 								ore.CFrame = lava.CFrame * CFrame.new(0, 20, 0)
-								task.wait(0.5)
+								task.wait(0.2)
 
 								-- Después al lava para procesarse
 								ore.CFrame = lava.CFrame * CFrame.new(0, 5, 0)
