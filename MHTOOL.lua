@@ -443,30 +443,42 @@ MiscTab:CreateToggle({
                     
                     if hrp then
                         local crates = boxesFolder:GetChildren()
-                        local closestCrate, closestDist
+                        local closestCrate, closestDist, crateCFrame
 
                         for _, crate in ipairs(crates) do
+                            local targetPart = nil
+
                             if crate:IsA("BasePart") then
-                                local dist = (hrp.Position - crate.Position).Magnitude
+                                targetPart = crate
+                            elseif crate:IsA("Model") then
+                                if crate.PrimaryPart then
+                                    targetPart = crate.PrimaryPart
+                                else
+                                    targetPart = crate:FindFirstChildWhichIsA("BasePart")
+                                end
+                            end
+
+                            if targetPart then
+                                local dist = (hrp.Position - targetPart.Position).Magnitude
                                 if not closestDist or dist < closestDist then
                                     closestDist = dist
                                     closestCrate = crate
+                                    crateCFrame = targetPart.CFrame
                                 end
                             end
                         end
 
-                        if closestCrate then
-                            hrp.CFrame = closestCrate.CFrame + Vector3.new(0, 3, 0) -- un poco arriba para no buguearse
+                        if crateCFrame then
+                            hrp.CFrame = crateCFrame -- dentro del crate
                         end
                     end
 
-                    task.wait(0.25) -- menos spam, suficiente rápido
+                    task.wait(0.25) -- ajusta el delay si quieres más rápido
                 end
             end)
         end
     end,
 })
-
 
 
 -- Make sure this is at the top of your script or in a shared place
