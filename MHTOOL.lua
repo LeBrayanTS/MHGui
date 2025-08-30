@@ -424,7 +424,7 @@ MiscTab:CreateToggle({
 local selectedBox = "Pumpkin"
 local autoCrateTP = false
 
--- Toggle to enable auto open + teleport
+-- CREATE TELEPORT
 MiscTab:CreateToggle({
     Name = "Auto Crate TP",
     CurrentValue = false,
@@ -435,30 +435,38 @@ MiscTab:CreateToggle({
             local boxesFolder = workspace:WaitForChild("Boxes")
             local player = game.Players.LocalPlayer
 
-            -- Open crate loop
-            task.spawn(function()
-                while autoCrateTP do
-                    pcall(function()
-                        game.ReplicatedStorage.MysteryBox:InvokeServer(selectedBox)
-                    end)
-                    task.wait(1)
-                end
-            end)
-
             -- Teleport loop
             task.spawn(function()
                 while autoCrateTP do
-                    local crates = boxesFolder:GetChildren()
-                    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                    if #crates > 0 and hrp then
-                        hrp.CFrame = crates[1].CFrame
+                    local character = player.Character
+                    local hrp = character and character:FindFirstChild("HumanoidRootPart")
+                    
+                    if hrp then
+                        local crates = boxesFolder:GetChildren()
+                        local closestCrate, closestDist
+
+                        for _, crate in ipairs(crates) do
+                            if crate:IsA("BasePart") then
+                                local dist = (hrp.Position - crate.Position).Magnitude
+                                if not closestDist or dist < closestDist then
+                                    closestDist = dist
+                                    closestCrate = crate
+                                end
+                            end
+                        end
+
+                        if closestCrate then
+                            hrp.CFrame = closestCrate.CFrame + Vector3.new(0, 3, 0) -- un poco arriba para no buguearse
+                        end
                     end
-                    task.wait(0.1)
+
+                    task.wait(0.25) -- menos spam, suficiente rápido
                 end
             end)
         end
     end,
 })
+
 
 
 -- Make sure this is at the top of your script or in a shared place
