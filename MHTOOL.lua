@@ -623,3 +623,39 @@ if autoEasterHop and hopToggle then
     hopToggle:Set(true)
     task.spawn(startEggHop)
 end
+
+-- 🔧 MISC: Auto Proximity Prompt Spammer
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+
+local miscSection = MiscTab:CreateSection("Proximity Prompt Spammer")
+
+local autoPrompt = false
+
+miscSection:CreateToggle({
+    Name = "Auto Press Prompt",
+    CurrentValue = false,
+    Flag = "AutoPromptToggle",
+    Callback = function(state)
+        autoPrompt = state
+        if state then
+            task.spawn(function()
+                while autoPrompt do
+                    local prompt = localPlayer:FindFirstChild("PlayerGui")
+                    if prompt then
+                        prompt = prompt:FindFirstChild("ProximityPrompts")
+                        if prompt then
+                            prompt = prompt:FindFirstChild("Prompt")
+                            if prompt and prompt:IsA("ProximityPrompt") then
+                                -- Forzar activación desde cualquier parte
+                                fireproximityprompt(prompt, 1, true)
+                            end
+                        end
+                    end
+                    task.wait(0.05) -- velocidad del spam
+                end
+            end)
+        end
+    end,
+})
