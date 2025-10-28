@@ -625,15 +625,12 @@ if autoEasterHop and hopToggle then
 end
 
 -- 🔧 MISC: Auto Proximity Prompt Spammer
-local VirtualInputManager = game:GetService("VirtualInputManager")
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 
-local miscSection = MiscTab:CreateSection("Proximity Prompt Spammer")
-
 local autoPrompt = false
 
-miscSection:CreateToggle({
+MiscTab:CreateToggle({
     Name = "Auto Press Prompt",
     CurrentValue = false,
     Flag = "AutoPromptToggle",
