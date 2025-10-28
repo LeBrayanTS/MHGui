@@ -656,3 +656,4 @@ MiscTab:CreateToggle({
         end
     end,
 })
+
