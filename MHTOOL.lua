@@ -628,32 +628,35 @@ end
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 
-local autoPrompt = false
+local spamZ = false
+local pressDelay = 0.08 -- ajusta la velocidad si quieres
 
 MiscTab:CreateToggle({
-    Name = "Auto Press Prompt",
+    Name = "Spam Z (simulate key)",
     CurrentValue = false,
-    Flag = "AutoPromptToggle",
     Callback = function(state)
-        autoPrompt = state
+        spamZ = state
         if state then
             task.spawn(function()
-                while autoPrompt do
-                    local prompt = localPlayer:FindFirstChild("PlayerGui")
-                    if prompt then
-                        prompt = prompt:FindFirstChild("ProximityPrompts")
-                        if prompt then
-                            prompt = prompt:FindFirstChild("Prompt")
-                            if prompt and prompt:IsA("ProximityPrompt") then
-                                -- Forzar activación desde cualquier parte
-                                fireproximityprompt(prompt, 1, true)
-                            end
-                        end
+                local vim = game:GetService("VirtualInputManager")
+                while spamZ do
+                    local ok, err = pcall(function()
+                        -- Press Z down then up
+                        vim:SendKeyEvent(true, "Z", false, game)
+                        task.wait(0.1)
+                        vim:SendKeyEvent(false, "Z", false, game)
+                    end)
+                    if not ok then
+                        -- si falla VirtualInputManager, intenta fallback mínimo con VirtualUser click (no es Z, pero sirve de emergencia)
+                        pcall(function()
+                            local vu = game:GetService("VirtualUser")
+                            vu:CaptureController()
+                            vu:ClickButton1(Vector2.new(0,0))
+                        end)
                     end
-                    task.wait(0.05) -- velocidad del spam
+                    task.wait(pressDelay)
                 end
             end)
         end
     end,
 })
-
