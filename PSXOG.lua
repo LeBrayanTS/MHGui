@@ -1,9 +1,9 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Silent Egg Farmer",
+   Name = "Universal Egg Farmer",
    LoadingTitle = "Loading GUI...",
-   LoadingSubtitle = "by Gemini",
+   LoadingSubtitle = "by BrayanTS",
    ConfigurationSaving = {
       Enabled = false
    },
@@ -17,9 +17,10 @@ local autoEggActive = false
 local exactRemote = nil
 local oldNamecall
 
+-- Arguments table setup with flexible defaults
 local args = {
-    "Egg of Many Gifts",
-    true
+    "Egg of Many Gifts", -- args[1]: Egg Name
+    false                -- args[2]: Triple Hatch Factor (Default to single hatch)
 }
 
 -- 1. Setup the namecall hook right away to capture the remote on manual hatch
@@ -41,7 +42,6 @@ end)
 -- 2. Persistent Background Loop Worker
 task.spawn(function()
     while true do
-        -- Only fire if the toggle is enabled AND the remote has been captured
         if autoEggActive and exactRemote then
             task.spawn(function()
                 pcall(function()
@@ -49,11 +49,31 @@ task.spawn(function()
                 end)
             end)
         end
-        task.wait(0.6) -- The exact delay from your base script
+        task.wait(0.2)
     end
 end)
 
--- 3. GUI Toggle Construction
+-- 3. GUI Text Input Element for changing egg names
+local Input = Tab:CreateInput({
+   Name = "Target Egg Name",
+   PlaceholderText = "Enter exact egg name here...",
+   RemoveTextAfterFocusLost = false,
+   Callback = function(Text)
+      args[1] = Text
+   end,
+})
+
+-- 4. GUI Toggle for Triple Hatch (The True/False Factor)
+local TripleToggle = Tab:CreateToggle({
+   Name = "Triple Hatch (Gamepass Only)",
+   CurrentValue = false,
+   Flag = "TripleHatchToggle",
+   Callback = function(Value)
+      args[2] = Value -- Sets argument 2 to true if enabled, false if disabled
+   end,
+})
+
+-- 5. GUI Main Toggle Construction
 local Toggle = Tab:CreateToggle({
    Name = "Enable Auto Egg",
    CurrentValue = false,
@@ -61,11 +81,10 @@ local Toggle = Tab:CreateToggle({
    Callback = function(Value)
       autoEggActive = Value
       
-      -- If they turn it on but haven't initialized the remote yet, remind them
       if autoEggActive and not exactRemote then
           Rayfield:Notify({
              Title = "Capture Required",
-             Content = "Open ONE egg manually now to initialize the silent loop!",
+             Content = "Open ANY egg manually once to initialize the loop!",
              Duration = 4,
              Image = nil,
           })
